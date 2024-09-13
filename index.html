@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PFP Creator</title>
+    <style>
+        #canvas {
+            border: 1px solid #ccc;
+            display: block;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>PFP Creator</h1>
+    <input type="file" id="upload" accept="image/*">
+    <canvas id="canvas" width="300" height="300"></canvas>
+    <button id="download">Download</button>
+
+    <script>
+        const upload = document.getElementById('upload');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const overlayImage = new Image();
+        overlayImage.src = 'https://i.ibb.co/JF8N2ft'; // Updated with your overlay PNG link
+
+        upload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(overlayImage, 0, 0, canvas.width, canvas.height);
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+
+        document.getElementById('download').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'pfp.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    </script>
+</body>
+</html>
