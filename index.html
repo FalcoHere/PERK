@@ -56,7 +56,7 @@
     <h1>PFP Creator</h1>
     <input type="file" id="upload" accept="image/*">
     <canvas id="canvas" width="300" height="300"></canvas>
-    <button id="download" style="display: none;">Download</button> <!-- Initially hidden -->
+    <button id="download" style="display: none;">Go to Link</button> <!-- Updated button text -->
     
     <div class="instruction">
         <span>💊</span> <!-- Pill emoji -->
@@ -95,7 +95,7 @@
 
         function drawOverlay() {
             const overlaySize = canvas.width * 0.5; // 50% size of the box
-            ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, (canvas.height - overlaySize) / 2, overlaySize, overlaySize);
+            ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, (canvas.height - overlaySize) * 0.7, overlaySize, overlaySize); // Adjusted drawing coordinates
         }
 
         document.getElementById('download').addEventListener('click', () => {
