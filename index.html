@@ -78,7 +78,10 @@
         let img = new Image();
         let imgX = 0;
         let imgY = 0;
+        let imgWidth = 0;
+        let imgHeight = 0;
         let isDragging = false;
+        let isResizing = false;
         let offsetX, offsetY;
 
         // Draw the overlay image on the canvas when it loads
@@ -91,8 +94,10 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 img.onload = function() {
-                    imgX = (canvas.width - img.width) / 2; // Center the image
-                    imgY = (canvas.height - img.height) / 2; // Center the image
+                    imgWidth = img.width;
+                    imgHeight = img.height;
+                    imgX = (canvas.width - imgWidth) / 2; // Center the image
+                    imgY = (canvas.height - imgHeight) / 2; // Center the image
                     drawCanvas();
                 }
                 img.src = e.target.result;
@@ -103,8 +108,10 @@
         loadImageButton.addEventListener('click', () => {
             const imgUrl = imageUrlInput.value;
             img.onload = function() {
-                imgX = (canvas.width - img.width) / 2; // Center the image
-                imgY = (canvas.height - img.height) / 2; // Center the image
+                imgWidth = img.width;
+                imgHeight = img.height;
+                imgX = (canvas.width - imgWidth) / 2; // Center the image
+                imgY = (canvas.height - imgHeight) / 2; // Center the image
                 drawCanvas();
             };
             img.onerror = function() {
@@ -117,8 +124,9 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'black'; // Fill canvas with black
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, imgX, imgY); // Draw the uploaded image
+            ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight); // Draw the uploaded image
             drawOverlay(); // Draw the overlay after the image is loaded
+            drawResizeHandle(); // Draw the resize handle
             document.getElementById('download').style.display = 'block'; // Show download button
         }
 
@@ -128,11 +136,25 @@
             ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, overlayY - overlaySize / 2, overlaySize, overlaySize); // Center the overlay horizontally
         }
 
-        // Mouse events for resizing
+        function drawResizeHandle() {
+            const handleSize = 10; // Size of the resize handle
+            ctx.fillStyle = 'white'; // Color of the handle
+            ctx.fillRect(imgX + imgWidth - handleSize, imgY + imgHeight - handleSize, handleSize, handleSize); // Draw the resize handle
+        }
+
+        // Mouse events for dragging the image
         canvas.addEventListener('mousedown', (e) => {
             const rect = canvas.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
+
+            // Check if the mouse is inside the image
+            if (mouseX >= imgX && mouseX <= imgX + imgWidth &&
+                mouseY >= imgY && mouseY <= imgY + imgHeight) {
+                isDragging = true;
+                offsetX = mouseX - imgX; // Calculate offset
+                offsetY = mouseY - imgY; // Calculate offset
+            }
 
             // Check if the mouse is near the bottom-right corner of the image
             if (mouseX >= imgX + imgWidth - 10 && mouseX <= imgX + imgWidth + 10 &&
@@ -142,6 +164,18 @@
         });
 
         canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                // Update the image position based on mouse movement
+                imgX = mouseX - offsetX;
+                imgY = mouseY - offsetY;
+
+                drawCanvas(); // Redraw the canvas with the new image position
+            }
+
             if (isResizing) {
                 const rect = canvas.getBoundingClientRect();
                 const mouseX = e.clientX - rect.left;
@@ -156,6 +190,7 @@
         });
 
         canvas.addEventListener('mouseup', () => {
+            isDragging = false; // Stop dragging
             isResizing = false; // Stop resizing
         });
 
