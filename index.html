@@ -5,25 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PFP Creator</title>
     <style>
+        body {
+            background-color: black; /* Set background to black */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Full height */
+            margin: 0;
+        }
         #canvas {
             border: 1px solid #ccc;
+            position: relative;
             display: block;
-            margin: 20px auto;
         }
     </style>
 </head>
 <body>
-    <h1>PFP Creator</h1>
-    <input type="file" id="upload" accept="image/*">
+    <h1 style="color: white;">PFP Creator</h1>
+    <input type="file" id="upload" accept="image/*" style="display: block; margin: 20px auto;">
     <canvas id="canvas" width="300" height="300"></canvas>
-    <button id="download">Download</button>
+    <button id="download" style="display: block; margin: 20px auto;">Download</button>
 
     <script>
         const upload = document.getElementById('upload');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const overlayImage = new Image();
-        overlayImage.src = 'https://i.ibb.co/JF8N2ft'; // Updated with your overlay PNG link
+        overlayImage.src = 'https://i.ibb.co/JF8N2ft'; // Your overlay PNG link
 
         upload.addEventListener('change', (event) => {
             const file = event.target.files[0];
@@ -32,8 +40,11 @@
                 const img = new Image();
                 img.onload = function() {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = 'black'; // Fill canvas with black
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(overlayImage, 0, 0, canvas.width, canvas.height);
+                    const overlaySize = canvas.width * 0.5; // 50% size of the box
+                    ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, (canvas.height - overlaySize) / 2, overlaySize, overlaySize);
                 }
                 img.src = e.target.result;
             }
