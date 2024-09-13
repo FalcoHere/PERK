@@ -95,7 +95,8 @@
 
         function drawOverlay() {
             const overlaySize = canvas.width * 0.5; // 50% size of the box
-            ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, (canvas.height - overlaySize) * 0.7, overlaySize, overlaySize); // Adjusted drawing coordinates
+            const overlayY = canvas.height * 0.95; // Position the overlay very close to the bottom
+            ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, overlayY - overlaySize, overlaySize, overlaySize); // Adjust Y position to account for the image height
         }
 
         document.getElementById('download').addEventListener('click', () => {
