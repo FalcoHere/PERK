@@ -8,30 +8,52 @@
         body {
             background-color: black; /* Set background to black */
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh; /* Full height */
             margin: 0;
+            color: white; /* Text color */
         }
         #canvas {
             border: 1px solid #ccc;
-            position: relative;
             display: block;
+            margin: 20px 0;
+        }
+        button {
+            background-color: #4CAF50; /* Green */
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 12px; /* Rounded corners */
+            transition: background-color 0.3s; /* Smooth transition */
+        }
+        button:hover {
+            background-color: #45a049; /* Darker green on hover */
+        }
+        input[type="file"] {
+            margin: 20px 0;
         }
     </style>
 </head>
 <body>
-    <h1 style="color: white;">PFP Creator</h1>
-    <input type="file" id="upload" accept="image/*" style="display: block; margin: 20px auto;">
+    <h1>PFP Creator</h1>
+    <input type="file" id="upload" accept="image/*">
     <canvas id="canvas" width="300" height="300"></canvas>
-    <button id="download" style="display: block; margin: 20px auto;">Download</button>
+    <button id="download" style="display: none;">Download</button> <!-- Initially hidden -->
 
     <script>
         const upload = document.getElementById('upload');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const overlayImage = new Image();
-        overlayImage.src = 'https://i.ibb.co/JF8N2ft'; // Your overlay PNG link
+        overlayImage.src = 'https://imgur.com/a/LdAhH1q'; // Updated with your overlay PNG link
 
         upload.addEventListener('change', (event) => {
             const file = event.target.files[0];
@@ -45,6 +67,7 @@
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     const overlaySize = canvas.width * 0.5; // 50% size of the box
                     ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, (canvas.height - overlaySize) / 2, overlaySize, overlaySize);
+                    document.getElementById('download').style.display = 'block'; // Show download button
                 }
                 img.src = e.target.result;
             }
