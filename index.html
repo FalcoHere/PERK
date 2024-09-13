@@ -53,7 +53,12 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const overlayImage = new Image();
-        overlayImage.src = 'https://imgur.com/a/LdAhH1q'; // Updated with your overlay PNG link
+        overlayImage.src = 'https://i.imgur.com/your_image.png'; // Replace with your direct overlay PNG link
+
+        // Ensure the overlay image is loaded before using it
+        overlayImage.onload = function() {
+            // Overlay image is ready to be drawn
+        };
 
         upload.addEventListener('change', (event) => {
             const file = event.target.files[0];
