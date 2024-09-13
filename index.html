@@ -75,6 +75,13 @@
         const overlayImage = new Image();
         overlayImage.src = 'https://i.imgur.com/mjh4GLS.png'; // Updated overlay image link
 
+        let img = new Image();
+        let imgWidth = 0;
+        let imgHeight = 0;
+        let imgX = 0;
+        let imgY = 0;
+        let isResizing = false;
+
         // Draw the overlay image on the canvas when it loads
         overlayImage.onload = function() {
             drawOverlay(); // Draw overlay initially
@@ -84,40 +91,77 @@
             const file = event.target.files[0];
             const reader = new FileReader();
             reader.onload = function(e) {
-                const img = new Image();
                 img.onload = function() {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.fillStyle = 'black'; // Fill canvas with black
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    drawOverlay(); // Draw the overlay after the image is loaded
-                    document.getElementById('download').style.display = 'block'; // Show download button
+                    imgWidth = img.width;
+                    imgHeight = img.height;
+                    imgX = (canvas.width - imgWidth) / 2; // Center the image
+                    imgY = (canvas.height - imgHeight) / 2; // Center the image
+                    drawCanvas();
                 }
                 img.src = e.target.result;
             }
             reader.readAsDataURL(file);
         });
 
-        function drawOverlay() {
-            const overlaySize = canvas.width * 0.5; // 50% size of the box
-            const overlayY = canvas.height * 0.95; // Position the overlay very close to the bottom
-            ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, overlayY - overlaySize, overlaySize, overlaySize); // Adjust Y position to account for the image height
+        loadImageButton.addEventListener('click', () => {
+            const imgUrl = imageUrlInput.value;
+            img.onload = function() {
+                imgWidth = img.width;
+                imgHeight = img.height;
+                imgX = (canvas.width - imgWidth) / 2; // Center the image
+                imgY = (canvas.height - imgHeight) / 2; // Center the image
+                drawCanvas();
+            };
+            img.onerror = function() {
+                alert('Invalid image URL. Please enter a valid image link.');
+            };
+            img.src = imgUrl; // Set the image source to the URL
+        });
+
+        function drawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'black'; // Fill canvas with black
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight);
+            drawOverlay(); // Draw the overlay after the image is loaded
+            document.getElementById('download').style.display = 'block'; // Show download button
         }
 
-        loadImageButton.addEventListener('click', () => {
-            const imageUrl = imageUrlInput.value;
-            if (imageUrl) {
-                const img = new Image();
-                img.onload = function() {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.fillStyle = 'black'; // Fill canvas with black
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    drawOverlay(); // Draw the overlay after the image is loaded
-                    document.getElementById('download').style.display = 'block'; // Show download button
-                }
-                img.src = imageUrl;
+        function drawOverlay() {
+            const overlaySize = canvas.width * 0.5; // 50% size of the box
+            const overlayY = canvas.height * 0.9; // Position the overlay very close to the bottom
+            ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, overlayY - overlaySize / 2, overlaySize, overlaySize); // Center the overlay horizontally
+        }
+
+        // Mouse events for resizing
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Check if the mouse is near the bottom-right corner of the image
+            if (mouseX >= imgX + imgWidth - 10 && mouseX <= imgX + imgWidth + 10 &&
+                mouseY >= imgY + imgHeight - 10 && mouseY <= imgY + imgHeight + 10) {
+                isResizing = true;
             }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isResizing) {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                // Update the width and height of the image based on mouse position
+                imgWidth = mouseX - imgX;
+                imgHeight = mouseY - imgY;
+
+                drawCanvas(); // Redraw the canvas with the new image size
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isResizing = false; // Stop resizing
         });
 
         document.getElementById('download').addEventListener('click', () => {
