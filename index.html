@@ -37,8 +37,9 @@
         button:hover {
             background-color: #45a049; /* Darker green on hover */
         }
-        input[type="file"] {
+        input[type="file"], input[type="text"] {
             margin: 20px 0;
+            width: 300px; /* Set width for input fields */
         }
         .instruction {
             display: flex;
@@ -55,6 +56,8 @@
 <body>
     <h1>PFP Creator</h1>
     <input type="file" id="upload" accept="image/*">
+    <input type="text" id="imageUrl" placeholder="Enter image URL here">
+    <button id="loadImage">Load Image from URL</button>
     <canvas id="canvas" width="300" height="300"></canvas>
     <button id="download" style="display: none;">Go to Link</button> <!-- Updated button text -->
     
@@ -65,6 +68,8 @@
 
     <script>
         const upload = document.getElementById('upload');
+        const imageUrlInput = document.getElementById('imageUrl');
+        const loadImageButton = document.getElementById('loadImage');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const overlayImage = new Image();
@@ -98,6 +103,22 @@
             const overlayY = canvas.height * 0.95; // Position the overlay very close to the bottom
             ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, overlayY - overlaySize, overlaySize, overlaySize); // Adjust Y position to account for the image height
         }
+
+        loadImageButton.addEventListener('click', () => {
+            const imageUrl = imageUrlInput.value;
+            if (imageUrl) {
+                const img = new Image();
+                img.onload = function() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = 'black'; // Fill canvas with black
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    drawOverlay(); // Draw the overlay after the image is loaded
+                    document.getElementById('download').style.display = 'block'; // Show download button
+                }
+                img.src = imageUrl;
+            }
+        });
 
         document.getElementById('download').addEventListener('click', () => {
             window.location.href = 'https://t.me/pepepork_perk'; // Redirect to the specified link
