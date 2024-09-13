@@ -3,661 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PFP Creator and PRESSTRIS</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: black;
-            color: white;
-        }
-        .container {
-            display: flex;
-            justify-content: space-around;
-            width: 100%;
-            max-width: 1200px; /* Limit the width to prevent stretching */
-        }
-        canvas {
-            border: 1px solid white;
-            margin: 20px;
-        }
-        .controls {
-            display: flex;
-            justify-content: center;
-            margin: 10px;
-        }
-        button {
-            margin: 0 5px;
-            padding: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-    </style>
-</head>
-<body>
-    <h1>PFP Creator and PRESSTRIS</h1>
-    <div class="container">
-        <div>
-            <h2>PFP Creator</h2>
-            <input type="file" id="upload" accept="image/*">
-            <input type="text" id="imageUrl" placeholder="Enter image URL here">
-            <button id="loadImage">Load Image from URL</button>
-            
-            <div class="resize-buttons">
-                <span class="size-label">Size Adjustment:</span>
-                <button id="decreaseSize">➖</button> <!-- Minus button -->
-                <button id="increaseSize">➕</button> <!-- Plus button -->
-            </div>
-
-            <canvas id="canvas" width="300" height="300"></canvas>
-            <button id="download" style="display: none;">Go to Link</button> <!-- Updated button text -->
-            
-            <div class="instruction">
-                <span>💊</span> <!-- Pill emoji -->
-                <span>You can right-click save/copy if you are too clapped anon</span>
-            </div>
-        </div>
-
-        <div>
-            <h2>PRESSTRIS</h2> <!-- Renamed Tetris to PRESSTRIS -->
-            <canvas id="tetrisCanvas" width="300" height="600"></canvas>
-            <div class="controls">
-                <button id="startTetris">Start Game</button>
-                <button id="moveLeft">⬅️</button>
-                <button id="moveRight">➡️</button>
-                <button id="rotate">🔄</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Existing PFP Creator code
-        const upload = document.getElementById('upload');
-        const imageUrlInput = document.getElementById('imageUrl');
-        const loadImageButton = document.getElementById('loadImage');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const overlayImage = new Image();
-        overlayImage.src = 'https://i.imgur.com/XfEgcom.png'; // Updated overlay image link
-
-        let img = new Image();
-        let imgX = 0;
-        let imgY = 0;
-        let imgWidth = 0;
-        let imgHeight = 0;
-        let isDragging = false;
-        let offsetX, offsetY;
-
-        overlayImage.onload = function() {
-            drawCanvas(); // Draw canvas initially
-        };
-
-        upload.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                img.onload = function() {
-                    imgWidth = img.width;
-                    imgHeight = img.height;
-                    imgX = (canvas.width - imgWidth) / 2; // Center the image
-                    imgY = (canvas.height - imgHeight) / 2; // Center the image
-                    drawCanvas();
-                }
-                img.src = e.target.result;
-            }
-            reader.readAsDataURL(file);
-        });
-
-        loadImageButton.addEventListener('click', () => {
-            const imgUrl = imageUrlInput.value;
-            img.onload = function() {
-                imgWidth = img.width;
-                imgHeight = img.height;
-                imgX = (canvas.width - imgWidth) / 2; // Center the image
-                imgY = (canvas.height - imgHeight) / 2; // Center the image
-                drawCanvas();
-            };
-            img.onerror = function() {
-                alert('Invalid image URL. Please enter a valid image link.');
-            };
-            img.src = imgUrl; // Set the image source to the URL
-        });
-
-        function drawCanvas() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'black'; // Fill canvas with black
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight); // Draw the uploaded image
-            drawOverlay(); // Draw the overlay after the image is loaded
-            document.getElementById('download').style.display = 'block'; // Show download button
-        }
-
-        function drawOverlay() {
-            const overlaySize = canvas.width * 0.5; // 50% size of the box
-            const overlayY = canvas.height * 0.8; // Position the overlay higher within the box
-            ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, overlayY - overlaySize / 2, overlaySize, overlaySize); // Center the overlay horizontally
-        }
-
-        // Resize buttons functionality
-        document.getElementById('increaseSize').addEventListener('click', () => {
-            imgWidth *= 1.1; // Increase width by 10%
-            imgHeight *= 1.1; // Increase height by 10%
-            drawCanvas(); // Redraw the canvas
-        });
-
-        document.getElementById('decreaseSize').addEventListener('click', () => {
-            imgWidth *= 0.9; // Decrease width by 10%
-            imgHeight *= 0.9; // Decrease height by 10%
-            drawCanvas(); // Redraw the canvas
-        });
-
-        // PRESSTRIS Game Logic
-        const tetrisCanvas = document.getElementById('tetrisCanvas');
-        const tetrisCtx = tetrisCanvas.getContext('2d');
-        const ROWS = 20;
-        const COLS = 10;
-        const board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
-        let currentPiece;
-        let currentPosition;
-        let gameInterval;
-
-        function resetGame() {
-            board.forEach(row => row.fill(0));
-            currentPiece = getRandomPiece();
-            currentPosition = { x: Math.floor(COLS / 2) - 1, y: 0 };
-            drawBoard();
-        }
-
-        function getRandomPiece() {
-            const pieces = [
-                { shape: [[1, 1, 1, 1]], type: 1 }, // I
-                { shape: [[1, 1], [1, 1]], type: 2 }, // O
-                { shape: [[0, 1, 0], [1, 1, 1]], type: 3 }, // T
-                { shape: [[1, 1, 0], [0, 1, 1]], type: 4 }, // S
-                { shape: [[0, 1, 1], [1, 1, 0]], type: 5 }, // Z
-                { shape: [[1, 0, 0], [1, 1, 1]], type: 6 }, // L
-                { shape: [[0, 0, 1], [1, 1, 1]], type: 7 }  // J
-            ];
-            return pieces[Math.floor(Math.random() * pieces.length)];
-        }
-
-        function drawBoard() {
-            tetrisCtx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
-            board.forEach((row, r) => {
-                row.forEach((value, c) => {
-                    if (value) {
-                        tetrisCtx.fillStyle = 'white';
-                        tetrisCtx.fillRect(c * 30, r * 30, 30, 30);
-                    }
-                });
-            });
-            drawCurrentPiece();
-        }
-
-        function drawCurrentPiece() {
-            currentPiece.shape.forEach((row, r) => {
-                row.forEach((value, c) => {
-                    if (value) {
-                        tetrisCtx.fillStyle = 'white';
-                        tetrisCtx.fillRect((currentPosition.x + c) * 30, (currentPosition.y + r) * 30, 30, 30);
-                    }
-                });
-            });
-        }
-
-        function collision() {
-            return currentPiece.shape.some((row, r) => {
-                return row.some((value, c) => {
-                    if (value) {
-                        const newX = currentPosition.x + c;
-                        const newY = currentPosition.y + r;
-                        return newX < 0 || newX >= COLS || newY >= ROWS || (newY >= 0 && board[newY][newX]);
-                    }
-                    return false;
-                });
-            });
-        }
-
-        function merge() {
-            currentPiece.shape.forEach((row, r) => {
-                row.forEach((value, c) => {
-                    if (value) {
-                        board[currentPosition.y + r][currentPosition.x + c] = currentPiece.type;
-                    }
-                });
-            });
-        }
-
-        function clearLines() {
-            for (let r = ROWS - 1; r >= 0; r--) {
-                if (board[r].every(value => value !== 0)) {
-                    board.splice(r, 1);
-                    board.unshift(Array(COLS).fill(0));
-                }
-            }
-        }
-
-        document.getElementById('startTetris').addEventListener('click', () => {
-            resetGame();
-            gameInterval = setInterval(dropPiece, 1000);
-        });
-
-        document.getElementById('moveLeft').addEventListener('click', () => {
-            currentPosition.x--;
-            if (collision()) {
-                currentPosition.x++;
-            }
-            drawBoard();
-        });
-
-        document.getElementById('moveRight').addEventListener('click', () => {
-            currentPosition.x++;
-            if (collision()) {
-                currentPosition.x--;
-            }
-            drawBoard();
-        });
-
-        document.getElementById('rotate').addEventListener('click', () => {
-            const rotatedShape = currentPiece.shape[0].map((_, index) => currentPiece.shape.map(row => row[index])).reverse();
-            const originalShape = currentPiece.shape;
-            currentPiece.shape = rotatedShape;
-            if (collision()) {
-                currentPiece.shape = originalShape; // Revert if collision occurs
-            }
-            drawBoard();
-        });
-
-        // Mouse events for dragging the image
-        canvas.addEventListener('mousedown', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-
-            // Check if the mouse is inside the image
-            if (mouseX >= imgX && mouseX <= imgX + imgWidth &&
-                mouseY >= imgY && mouseY <= imgY + imgHeight) {
-                isDragging = true;
-                offsetX = mouseX - imgX; // Calculate offset
-                offsetY = mouseY - imgY; // Calculate offset
-            }
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                const rect = canvas.getBoundingClientRect();
-                const mouseX = e.clientX - rect.left;
-                const mouseY = e.clientY - rect.top;
-
-                // Update the image position based on mouse movement
-                imgX = mouseX - offsetX;
-                imgY = mouseY - offsetY;
-
-                drawCanvas(); // Redraw the canvas with the new image position
-            }
-        });
-
-        canvas.addEventListener('mouseup', () => {
-            isDragging = false; // Stop dragging
-        });
-
-        document.getElementById('download').addEventListener('click', () => {
-            window.location.href = 'https://t.me/pepepork_perk'; // Redirect to the specified link
-        });
-    </script>
-</body>
-</html>
-</html>
-        const VACANT = 'WHITE';
-
-        function drawSquare(x, y, color) {
-            tetrisCtx.fillStyle = color;
-            tetrisCtx.fillRect(x * SQ, y * SQ, SQ, SQ);
-
-            tetrisCtx.strokeStyle = 'BLACK';
-            tetrisCtx.strokeRect(x * SQ, y * SQ, SQ, SQ);
-        }
-
-        let board = [];
-        for (r = 0; r < ROW; r++) {
-            board[r] = [];
-            for (c = 0; c < COL; c++) {
-                board[r][c] = VACANT;
-            }
-        }
-
-        function drawBoard() {
-            for (r = 0; r < ROW; r++) {
-                for (c = 0; c < COL; c++) {
-                    drawSquare(c, r, board[r][c]);
-                }
-            }
-        }
-
-        drawBoard();
-
-        class Piece {
-            constructor(tetromino, color) {
-                this.tetromino = tetromino;
-                this.color = color;
-
-                this.tetrominoN = 0;
-                this.activeTetromino = this.tetromino[this.tetrominoN];
-
-                this.x = 3;
-                this.y = -2;
-            }
-
-            fill(color) {
-                for (r = 0; r < this.activeTetromino.length; r++) {
-                    for (c = 0; c < this.activeTetromino.length; c++) {
-                        if (this.activeTetromino[r][c]) {
-                            drawSquare(this.x + c, this.y + r, color);
-                        }
-                    }
-                }
-            }
-
-            draw() {
-                this.fill(this.color);
-            }
-
-            unDraw() {
-                this.fill(VACANT);
-            }
-
-            moveDown() {
-                if (!this.collision(0, 1, this.activeTetromino)) {
-                    this.unDraw();
-                    this.y++;
-                    this.draw();
-                } else {
-                    this.lock();
-                    p = randomPiece();
-                }
-            }
-
-            moveRight() {
-                if (!this.collision(1, 0, this.activeTetromino)) {
-                    this.unDraw();
-                    this.x++;
-                    this.draw();
-                }
-            }
-
-            moveLeft() {
-                if (!this.collision(-1, 0, this.activeTetromino)) {
-                    this.unDraw();
-                    this.x--;
-                    this.draw();
-                }
-            }
-
-            rotate() {
-                let nextPattern = this.tetromino[(this.tetrominoN + 1) % this.tetromino.length];
-                let kick = 0;
-
-                if (this.collision(0, 0, nextPattern)) {
-                    if (this.x > COL / 2) {
-                        kick = -1;
-                    } else {
-                        kick = 1;
-                    }
-                }
-
-                if (!this.collision(kick, 0, nextPattern)) {
-                    this.unDraw();
-                    this.x += kick;
-                    this.tetrominoN = (this.tetrominoN + 1) % this.tetromino.length;
-                    this.activeTetromino = this.tetromino[this.tetrominoN];
-                    this.draw();
-                }
-            }
-
-            collision(x, y, piece) {
-                for (r = 0; r < piece.length; r++) {
-                    for (c = 0; c < piece.length; c++) {
-                        if (!piece[r][c]) {
-                            continue;
-                        }
-
-                        let newX = this.x + c + x;
-                        let newY = this.y + r + y;
-
-                        if (newX < 0 || newX >= COL || newY >= ROW) {
-                            return true;
-                        }
-
-                        if (newY < 0) {
-                            continue;
-                        }
-
-                        if (board[newY][newX] != VACANT) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            }
-
-            lock() {
-                for (r = 0; r < this.activeTetromino.length; r++) {
-                    for (c = 0; c < this.activeTetromino.length; c++) {
-                        if (!this.activeTetromino[r][c]) {
-                            continue;
-                        }
-
-                        if (this.y + r < 0) {
-                            alert('Game Over');
-                            gameOver = true;
-                            break;
-                        }
-
-                        board[this.y + r][this.x + c] = this.color;
-                    }
-                }
-
-                for (r = 0; r < ROW; r++) {
-                    let isRowFull = true;
-                    for (c = 0; c < COL; c++) {
-                        isRowFull = isRowFull && (board[r][c] != VACANT);
-                    }
-                    if (isRowFull) {
-                        for (y = r; y > 1; y--) {
-                            for (c = 0; c < COL; c++) {
-                                board[y][c] = board[y - 1][c];
-                            }
-                        }
-                        for (c = 0; c < COL; c++) {
-                            board[0][c] = VACANT;
-                        }
-                    }
-                }
-
-                drawBoard();
-            }
-        }
-
-        const PIECES = [
-            [Z, 'red'],
-            [S, 'green'],
-            [T, 'yellow'],
-            [O, 'blue'],
-            [L, 'purple'],
-            [I, 'cyan'],
-            [J, 'orange']
-        ];
-
-        const I = [
-            [
-                [0, 0, 0, 0],
-                [1, 1, 1, 1],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0]
-            ],
-            [
-                [0, 0, 1, 0],
-                [0, 0, 1, 0],
-                [0, 0, 1, 0],
-                [0, 0, 1, 0]
-            ],
-            [
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-                [1, 1, 1, 1],
-                [0, 0, 0, 0]
-            ],
-            [
-                [0, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 1, 0, 0]
-            ]
-        ];
-
-        const J = [
-            [
-                [1, 0, 0],
-                [1, 1, 1],
-                [0, 0, 0]
-            ],
-            [
-                [0, 1, 1],
-                [0, 1, 0],
-                [0, 1, 0]
-            ],
-            [
-                [0, 0, 0],
-                [1, 1, 1],
-                [0, 0, 1]
-            ],
-            [
-                [0, 1, 0],
-                [0, 1, 0],
-                [1, 1, 0]
-            ]
-        ];
-
-        const L = [
-            [
-                [0, 0, 1],
-                [1, 1, 1],
-                [0, 0, 0]
-            ],
-            [
-                [0, 1, 0],
-                [0, 1, 0],
-                [0, 1, 1]
-            ],
-            [
-                [0, 0, 0],
-                [1, 1, 1],
-                [1, 0, 0]
-            ],
-            [
-                [1, 1, 0],
-                [0, 1, 0],
-                [0, 1, 0]
-            ]
-        ];
-
-        const O = [
-            [
-                [0, 0, 0, 0],
-                [0, 1, 1, 0],
-                [0, 1, 1, 0],
-                [0, 0, 0, 0]
-            ]
-        ];
-
-        const S = [
-            [
-                [0, 1, 1],
-                [1, 1, 0],
-                [0, 0, 0]
-            ],
-            [
-                [0, 1, 0],
-                [0, 1, 1],
-                [0, 0, 1]
-            ],
-            [
-                [0, 0, 0],
-                [0, 1, 1],
-                [1, 1, 0]
-            ],
-            [
-                [1, 0, 0],
-                [1, 1, 0],
-                [0, 1, 0]
-            ]
-        ];
-
-        const T = [
-            [
-                [0, 1, 0],
-                [1, 1, 1],
-                [0, 0, 0]
-            ],
-            [
-                [0, 1, 0],
-                [0, 1, 1],
-                [0, 1, 0]
-            ],
-            [
-                [0, 0, 0],
-                [1, 1, 1],
-                [0, 1, 0]
-            ],
-            [
-                [0, 1, 0],
-                [1, 1, 0],
-                [0, 1, 0]
-            ]
-        ];
-
-        const Z = [
-            [
-                [1, 1, 0],
-                [0, 1, 1],
-                [0, 0, 0]
-            ],
-            [
-                [0, 0, 1],
-                [0, 1, 1],
-                [0, 1, 0]
-            ],
-            [
-                [0, 0, 0],
-                [1, 1, 0],
-                [0, 1, 1]
-            ],
-            [
-                [0, 1, 0],
-                [1, 1, 0],
-                [1, 0, 0]
-            ]
-        ];
-
-        function randomPiece() {
-            let r = Math.floor(Math.random() * PIECES.length);
-            return new Piece(PIECES[r][0], PIECES[r][1]);
-        }
-
-        let p = randomPiece();
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PFP Creator and Mouse Games</title>
+    <title>PFP Creator</title>
     <style>
         body {
             display: flex;
@@ -670,14 +16,7 @@
             border: 1px solid white;
             margin: 20px;
         }
-        .game-container {
-            display: flex;
-            justify-content: space-around;
-            width: 100%;
-        }
-        .controls {
-            display: flex;
-            justify-content: center;
+        .resize-buttons {
             margin: 10px;
         }
         button {
@@ -702,290 +41,87 @@
     
     <div class="resize-buttons">
         <span class="size-label">Size Adjustment:</span>
-        <button id="decreaseSize">➖</button> <!-- Minus button -->
-        <button id="increaseSize">➕</button> <!-- Plus button -->
+        <button id="decreaseSize">➖</button>
+        <button id="increaseSize">➕</button>
     </div>
 
     <canvas id="canvas" width="300" height="300"></canvas>
-    <button id="download" style="display: none;">Go to Link</button> <!-- Updated button text -->
-    
+    <button id="download" style="display: none;">Go to Link</button>
     <div class="instruction">
-        <span>💊</span> <!-- Pill emoji -->
+        <span>💊</span>
         <span>You can right-click save/copy if you are too clapped anon</span>
     </div>
 
-    <div class="game-container">
-        <div>
-            <h2>Sideways Ping Pong Game</h2>
-            <canvas id="sidewaysPingPongCanvas" width="600" height="300"></canvas>
-            <div class="controls">
-                <button id="startSidewaysPingPong">Start Game</button>
-            </div>
-        </div>
-
-        <div>
-            <h2>Ping Pong Game</h2>
-            <canvas id="pingPongCanvas" width="300" height="300"></canvas>
-            <div class="controls">
-                <button id="startPingPong">Start Game</button>
-            </div>
-        </div>
-    </div>
-
     <script>
-        // Existing PFP Creator code
+        // PFP Creator Code
         const upload = document.getElementById('upload');
         const imageUrlInput = document.getElementById('imageUrl');
         const loadImageButton = document.getElementById('loadImage');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const overlayImage = new Image();
-        overlayImage.src = 'https://i.imgur.com/XfEgcom.png'; // Updated overlay image link
+        overlayImage.src = 'https://i.imgur.com/XfEgcom.png';
 
         let img = new Image();
-        let imgX = 0;
-        let imgY = 0;
-        let imgWidth = 0;
-        let imgHeight = 0;
-        let isDragging = false;
-        let offsetX, offsetY;
+        let imgX = 0, imgY = 0, imgWidth = 0, imgHeight = 0;
 
-        overlayImage.onload = function() {
-            drawCanvas(); // Draw canvas initially
-        };
+        overlayImage.onload = drawCanvas;
 
         upload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             const reader = new FileReader();
-            reader.onload = function(e) {
-                img.onload = function() {
+            reader.onload = (e) => {
+                img.onload = () => {
                     imgWidth = img.width;
                     imgHeight = img.height;
-                    imgX = (canvas.width - imgWidth) / 2; // Center the image
-                    imgY = (canvas.height - imgHeight) / 2; // Center the image
+                    imgX = (canvas.width - imgWidth) / 2;
+                    imgY = (canvas.height - imgHeight) / 2;
                     drawCanvas();
-                }
+                };
                 img.src = e.target.result;
-            }
+            };
             reader.readAsDataURL(file);
         });
 
         loadImageButton.addEventListener('click', () => {
             const imgUrl = imageUrlInput.value;
-            img.onload = function() {
+            img.onload = () => {
                 imgWidth = img.width;
                 imgHeight = img.height;
-                imgX = (canvas.width - imgWidth) / 2; // Center the image
-                imgY = (canvas.height - imgHeight) / 2; // Center the image
+                imgX = (canvas.width - imgWidth) / 2;
+                imgY = (canvas.height - imgHeight) / 2;
                 drawCanvas();
             };
-            img.onerror = function() {
-                alert('Invalid image URL. Please enter a valid image link.');
-            };
-            img.src = imgUrl; // Set the image source to the URL
+            img.onerror = () => alert('Invalid image URL. Please enter a valid image link.');
+            img.src = imgUrl;
         });
 
         function drawCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'black'; // Fill canvas with black
+            ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight); // Draw the uploaded image
-            drawOverlay(); // Draw the overlay after the image is loaded
-            document.getElementById('download').style.display = 'block'; // Show download button
+            ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight);
+            drawOverlay();
+            document.getElementById('download').style.display = 'block';
         }
 
         function drawOverlay() {
-            const overlaySize = canvas.width * 0.5; // 50% size of the box
-            const overlayY = canvas.height * 0.8; // Position the overlay higher within the box
-            ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, overlayY - overlaySize / 2, overlaySize, overlaySize); // Center the overlay horizontally
+            const overlaySize = canvas.width * 0.5;
+            const overlayY = canvas.height * 0.8;
+            ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, overlayY - overlaySize / 2, overlaySize, overlaySize);
         }
 
         // Resize buttons functionality
         document.getElementById('increaseSize').addEventListener('click', () => {
-            imgWidth *= 1.1; // Increase width by 10%
-            imgHeight *= 1.1; // Increase height by 10%
-            drawCanvas(); // Redraw the canvas
+            imgWidth *= 1.1;
+            imgHeight *= 1.1;
+            drawCanvas();
         });
 
         document.getElementById('decreaseSize').addEventListener('click', () => {
-            imgWidth *= 0.9; // Decrease width by 10%
-            imgHeight *= 0.9; // Decrease height by 10%
-            drawCanvas(); // Redraw the canvas
-        });
-
-        // Mouse events for dragging the image
-        canvas.addEventListener('mousedown', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-
-            // Check if the mouse is inside the image
-            if (mouseX >= imgX && mouseX <= imgX + imgWidth &&
-                mouseY >= imgY && mouseY <= imgY + imgHeight) {
-                isDragging = true;
-                offsetX = mouseX - imgX; // Calculate offset
-                offsetY = mouseY - imgY; // Calculate offset
-            }
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                const rect = canvas.getBoundingClientRect();
-                const mouseX = e.clientX - rect.left;
-                const mouseY = e.clientY - rect.top;
-
-                // Update the image position based on mouse movement
-                imgX = mouseX - offsetX;
-                imgY = mouseY - offsetY;
-
-                drawCanvas(); // Redraw the canvas with the new image position
-            }
-        });
-
-        canvas.addEventListener('mouseup', () => {
-            isDragging = false; // Stop dragging
-        });
-
-        document.getElementById('download').addEventListener('click', () => {
-            window.location.href = 'https://t.me/pepepork_perk'; // Redirect to the specified link
-        });
-
-        // Sideways Ping Pong Game
-        const sidewaysPingPongCanvas = document.getElementById('sidewaysPingPongCanvas');
-        const sidewaysPingPongCtx = sidewaysPingPongCanvas.getContext('2d');
-        let ballSideways = { x: 300, y: 150, radius: 10, dx: 2, dy: 0 };
-        let leftPaddle = { x: 10, y: 100, width: 10, height: 60 };
-        let rightPaddle = { x: 580, y: 100, width: 10, height: 60 };
-        let gameStartedSideways = false;
-
-        function drawSidewaysPingPong() {
-            sidewaysPingPongCtx.clearRect(0, 0, sidewaysPingPongCanvas.width, sidewaysPingPongCanvas.height);
-            sidewaysPingPongCtx.fillStyle = 'blue';
-            sidewaysPingPongCtx.beginPath();
-            sidewaysPingPongCtx.arc(ballSideways.x, ballSideways.y, ballSideways.radius, 0, Math.PI * 2);
-            sidewaysPingPongCtx.fill();
-            sidewaysPingPongCtx.fillStyle = 'white';
-            sidewaysPingPongCtx.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height);
-            sidewaysPingPongCtx.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height);
-        }
-
-        function updateSidewaysPingPong() {
-            if (!gameStartedSideways) return;
-
-            ballSideways.x += ballSideways.dx;
-            ballSideways.y += ballSideways.dy;
-
-            // Bounce off top and bottom walls
-            if (ballSideways.y + ballSideways.radius > sidewaysPingPongCanvas.height || ballSideways.y - ballSideways.radius < 0) {
-                ballSideways.dy = -ballSideways.dy;
-            }
-
-            // Paddle collision
-            if (ballSideways.x - ballSideways.radius < leftPaddle.x + leftPaddle.width && 
-                ballSideways.y > leftPaddle.y && 
-                ballSideways.y < leftPaddle.y + leftPaddle.height) {
-                ballSideways.dx = -ballSideways.dx;
-            }
-
-            if (ballSideways.x + ballSideways.radius > rightPaddle.x && 
-                ballSideways.y > rightPaddle.y && 
-                ballSideways.y < rightPaddle.y + rightPaddle.height) {
-                ballSideways.dx = -ballSideways.dx;
-            }
-
-            // Reset ball if it goes out of bounds
-            if (ballSideways.x + ballSideways.radius < 0 || ballSideways.x - ballSideways.radius > sidewaysPingPongCanvas.width) {
-                ballSideways.x = 300;
-                ballSideways.y = 150;
-                ballSideways.dx = 2;
-                ballSideways.dy = 0;
-                gameStartedSideways = false; // Stop the game
-            }
-
-            drawSidewaysPingPong();
-        }
-
-        document.getElementById('startSidewaysPingPong').addEventListener('click', () => {
-            gameStartedSideways = true; // Start the game
-            ballSideways.x = 300; // Reset ball position
-            ballSideways.y = 150;
-            ballSideways.dx = 2; // Reset ball speed
-            ballSideways.dy = 0;
-            leftPaddle.y = 100; // Reset paddle positions
-            rightPaddle.y = 100;
-            setInterval(updateSidewaysPingPong, 20); // Update game every 20ms
-        });
-
-        // Original Ping Pong Game
-        const pingPongCanvas = document.getElementById('pingPongCanvas');
-        const pingPongCtx = pingPongCanvas.getContext('2d');
-        let ball = { x: 150, y: 150, radius: 10, dx: 2, dy: 2 };
-        let paddle = { x: 130, y: 280, width: 40, height: 10 };
-        let gameStartedPingPong = false;
-
-        function drawPingPong() {
-            pingPongCtx.clearRect(0, 0, pingPongCanvas.width, pingPongCanvas.height);
-            pingPongCtx.fillStyle = 'blue';
-            pingPongCtx.beginPath();
-            pingPongCtx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-            pingPongCtx.fill();
-            pingPongCtx.fillStyle = 'white';
-            pingPongCtx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
-        }
-
-        function updatePingPong() {
-            if (!gameStartedPingPong) return;
-
-            ball.x += ball.dx;
-            ball.y += ball.dy;
-
-            // Bounce off walls
-            if (ball.x + ball.radius > pingPongCanvas.width || ball.x - ball.radius < 0) {
-                ball.dx = -ball.dx;
-            }
-            if (ball.y - ball.radius < 0) {
-                ball.dy = -ball.dy;
-            }
-
-            // Paddle collision
-            if (ball.y + ball.radius > paddle.y && ball.x > paddle.x && ball.x < paddle.x + paddle.width) {
-                ball.dy = -ball.dy;
-            }
-
-            // Reset ball if it goes below the paddle
-            if (ball.y + ball.radius > pingPongCanvas.height) {
-                ball.x = 150;
-                ball.y = 150;
-                ball.dx = 2;
-                ball.dy = 2;
-                gameStartedPingPong = false; // Stop the game
-            }
-
-            drawPingPong();
-        }
-
-        document.getElementById('startPingPong').addEventListener('click', () => {
-            gameStartedPingPong = true; // Start the game
-            ball.x = 150; // Reset ball position
-            ball.y = 150;
-            ball.dx = 2; // Reset ball speed
-            ball.dy = 2;
-            paddle.x = 130; // Reset paddle position
-            setInterval(updatePingPong, 20); // Update game every 20ms
-        });
-
-        pingPongCanvas.addEventListener('mousemove', (event) => {
-            const rect = pingPongCanvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;
-            paddle.x = mouseX - paddle.width / 2; // Center the paddle on the mouse
-        });
-
-        // Control paddles with mouse for sideways game
-        sidewaysPingPongCanvas.addEventListener('mousemove', (event) => {
-            const rect = sidewaysPingPongCanvas.getBoundingClientRect();
-            const mouseY = event.clientY - rect.top;
-            leftPaddle.y = mouseY - leftPaddle.height / 2; // Center the left paddle on the mouse
-            rightPaddle.y = mouseY - rightPaddle.height / 2; // Center the right paddle on the mouse
+            imgWidth *= 0.9;
+            imgHeight *= 0.9;
+            drawCanvas();
         });
     </script>
 </body>
