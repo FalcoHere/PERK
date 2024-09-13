@@ -21,6 +21,23 @@
             justify-content: space-around;
             width: 100%;
         }
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin: 10px;
+        }
+        button {
+            margin: 0 5px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -47,6 +64,12 @@
         <div>
             <h2>Tetris Game</h2>
             <canvas id="tetrisCanvas" width="300" height="600"></canvas>
+            <div class="controls">
+                <button id="startTetris">Start Game</button>
+                <button id="moveLeft">⬅️</button>
+                <button id="moveRight">➡️</button>
+                <button id="rotate">↻</button>
+            </div>
         </div>
 
         <div>
@@ -176,127 +199,156 @@
         // Tetris Game
         const tetrisCanvas = document.getElementById('tetrisCanvas');
         const tetrisCtx = tetrisCanvas.getContext('2d');
-        const tetrisSize = 30;
-        const tetrisRows = 20;
-        const tetrisCols = 10;
-        let tetrisBoard = [];
-        let tetrisPiece = null;
-        let tetrisPieceX = 0;
-        let tetrisPieceY = 0;
-        let tetrisInterval = null;
-
-        const tetrisPieces = [
-            [[1, 1, 1, 1]], // I
-            [[1, 1], [1, 1]], // O
-            [[1, 1, 1], [0, 1, 0]], // T
-            [[1, 1, 0], [0, 1, 1]], // S
-            [[0, 1, 1], [1, 1, 0]], // Z
-            [[1, 1, 1], [1, 0, 0]], // J
-            [[1, 1, 1], [0, 0, 1]] // L
+        const ROWS = 20;
+        const COLS = 10;
+        const BLOCK_SIZE = 30;
+        const colors = [
+            null,
+            'cyan', // I
+            'blue', // J
+            'orange', // L
+            'yellow', // O
+            'green', // S
+            'purple', // T
+            'red' // Z
         ];
 
-        function initTetris() {
-            for (let row = 0; row < tetrisRows; row++) {
-                tetrisBoard[row] = [];
-                for (let col = 0; col < tetrisCols; col++) {
-                    tetrisBoard[row][col] = 0;
-                }
-            }
-            tetrisPiece = getRandomPiece();
-            tetrisPieceX = Math.floor(tetrisCols / 2) - Math.floor(tetrisPiece[0].length / 2);
-            tetrisPieceY = 0;
-            drawTetris();
-            tetrisInterval = setInterval(moveTetrisPieceDown, 1000);
-        }
+        let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+        let currentPiece;
+        let currentPosition;
+        let gameInterval;
+        let isGameStarted = false;
 
-        function getRandomPiece() {
-            return tetrisPieces[Math.floor(Math.random() * tetrisPieces.length)];
-        }
-
-        function drawTetris() {
+        function drawBoard() {
             tetrisCtx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
-            for (let row = 0; row < tetrisRows; row++) {
-                for (let col = 0; col < tetrisCols; col++) {
-                    if (tetrisBoard[row][col]) {
-                        tetrisCtx.fillStyle = 'cyan';
-                        tetrisCtx.fillRect(col * tetrisSize, row * tetrisSize, tetrisSize, tetrisSize);
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (board[r][c]) {
+                        tetrisCtx.fillStyle = colors[board[r][c]];
+                        tetrisCtx.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
                     }
                 }
             }
-            for (let row = 0; row < tetrisPiece.length; row++) {
-                for (let col = 0; col < tetrisPiece[row].length; col++) {
-                    if (tetrisPiece[row][col]) {
-                        tetrisCtx.fillStyle = 'yellow';
-                        tetrisCtx.fillRect((tetrisPieceX + col) * tetrisSize, (tetrisPieceY + row) * tetrisSize, tetrisSize, tetrisSize);
+            drawCurrentPiece();
+        }
+
+        function drawCurrentPiece() {
+            tetrisCtx.fillStyle = colors[currentPiece.type];
+            currentPiece.shape.forEach((row, r) => {
+                row.forEach((value, c) => {
+                    if (value) {
+                        tetrisCtx.fillRect((currentPosition.x + c) * BLOCK_SIZE, (currentPosition.y + r) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
                     }
+                });
+            });
+        }
+
+        function createPiece() {
+            const pieces = [
+                { type: 1, shape: [[1, 1, 1, 1]] }, // I
+                { type: 2, shape: [[0, 0, 1], [1, 1, 1]] }, // J
+                { type: 3, shape: [[1, 1, 1], [0, 0, 1]] }, // L
+                { type: 4, shape: [[1, 1], [1, 1]] }, // O
+                { type: 5, shape: [[0, 1, 1], [1, 1, 0]] }, // S
+                { type: 6, shape: [[0, 1, 0], [1, 1, 1]] }, // T
+                { type: 7, shape: [[1, 1, 0], [0, 1, 1]] } // Z
+            ];
+            return pieces[Math.floor(Math.random() * pieces.length)];
+        }
+
+        function resetGame() {
+            board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+            currentPiece = createPiece();
+            currentPosition = { x: 3, y: 0 };
+            drawBoard();
+        }
+
+        function dropPiece() {
+            currentPosition.y++;
+            if (collision()) {
+                currentPosition.y--;
+                merge();
+                clearLines();
+                currentPiece = createPiece();
+                currentPosition = { x: 3, y: 0 };
+                if (collision()) {
+                    alert("Game Over!");
+                    resetGame();
+                    stopGame();
+                }
+            }
+            drawBoard();
+        }
+
+        function collision() {
+            return currentPiece.shape.some((row, r) => {
+                return row.some((value, c) => {
+                    if (value) {
+                        const newX = currentPosition.x + c;
+                        const newY = currentPosition.y + r;
+                        return newX < 0 || newX >= COLS || newY >= ROWS || (newY >= 0 && board[newY][newX]);
+                    }
+                    return false;
+                });
+            });
+        }
+
+        function merge() {
+            currentPiece.shape.forEach((row, r) => {
+                row.forEach((value, c) => {
+                    if (value) {
+                        board[currentPosition.y + r][currentPosition.x + c] = currentPiece.type;
+                    }
+                });
+            });
+        }
+
+        function clearLines() {
+            for (let r = ROWS - 1; r >= 0; r--) {
+                if (board[r].every(value => value !== 0)) {
+                    board.splice(r, 1);
+                    board.unshift(Array(COLS).fill(0));
                 }
             }
         }
 
-        function moveTetrisPieceDown() {
-            if (!collision(tetrisPiece, tetrisPieceX, tetrisPieceY + 1)) {
-                tetrisPieceY++;
-                drawTetris();
-            } else {
-                mergeTetrisPiece();
-                clearRows();
-                tetrisPiece = getRandomPiece();
-                tetrisPieceX = Math.floor(tetrisCols / 2) - Math.floor(tetrisPiece[0].length / 2);
-                tetrisPieceY = 0;
-                if (collision(tetrisPiece, tetrisPieceX, tetrisPieceY)) {
-                    gameOver();
+        function startGame() {
+            if (!isGameStarted) {
+                isGameStarted = true;
+                resetGame();
+                gameInterval = setInterval(dropPiece, 1000);
+            }
+        }
+
+        function stopGame() {
+            clearInterval(gameInterval);
+            isGameStarted = false;
+        }
+
+        document.getElementById('startTetris').addEventListener('click', startGame);
+        document.getElementById('moveLeft').addEventListener('click', () => movePiece(-1));
+        document.getElementById('moveRight').addEventListener('click', () => movePiece(1));
+        document.getElementById('rotate').addEventListener('click', rotatePiece);
+
+        function movePiece(direction) {
+            if (isGameStarted) {
+                const newX = currentPosition.x + direction;
+                if (newX >= 0 && newX < COLS) {
+                    currentPosition.x = newX;
+                    drawBoard();
                 }
             }
         }
 
-        function mergeTetrisPiece() {
-            for (let row = 0; row < tetrisPiece.length; row++) {
-                for (let col = 0; col < tetrisPiece[row].length; col++) {
-                    if (tetrisPiece[row][col]) {
-                        tetrisBoard[tetrisPieceY + row][tetrisPieceX + col] = 1;
-                    }
+        function rotatePiece() {
+            if (isGameStarted) {
+                const newShape = currentPiece.shape[0].map((val, index) => currentPiece.shape.map(row => row[index]).reverse());
+                if (!collision(newShape)) {
+                    currentPiece.shape = newShape;
+                    drawBoard();
                 }
             }
         }
-
-        function clearRows() {
-            for (let row = tetrisRows - 1; row >= 0; row--) {
-                if (tetrisBoard[row].every(cell => cell === 1)) {
-                    for (let r = row; r > 0; r--) {
-                        for (let c = 0; c < tetrisCols; c++) {
-                            tetrisBoard[r][c] = tetrisBoard[r - 1][c];
-                        }
-                    }
-                    for (let c = 0; c < tetrisCols; c++) {
-                        tetrisBoard[0][c] = 0;
-                    }
-                    row++;
-                }
-            }
-        }
-
-        function collision(piece, x, y) {
-            for (let row = 0; row < piece.length; row++) {
-                for (let col = 0; col < piece[row].length; col++) {
-                    if (piece[row][col] && (
-                        y + row >= tetrisRows ||
-                        x + col < 0 ||
-                        x + col >= tetrisCols ||
-                        tetrisBoard[y + row][x + col]
-                    )) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        function gameOver() {
-            clearInterval(tetrisInterval);
-            alert('Game Over');
-        }
-
-        initTetris();
 
         // Ping Pong Game
         const pingPongCanvas = document.getElementById('pingPongCanvas');
