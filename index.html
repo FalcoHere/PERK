@@ -53,7 +53,7 @@
         }
         .resize-buttons {
             display: flex;
-            justify-content: center;
+            align-items: center; /* Align items vertically */
             margin: 10px 0;
         }
         .resize-buttons button {
@@ -64,6 +64,11 @@
             border: 2px solid white; /* White border */
             margin: 0 5px; /* Space between buttons */
         }
+        .size-label {
+            margin-right: 10px; /* Space between label and buttons */
+            font-size: 16px; /* Font size for the label */
+            color: white; /* Text color */
+        }
     </style>
 </head>
 <body>
@@ -73,6 +78,7 @@
     <button id="loadImage">Load Image from URL</button>
     
     <div class="resize-buttons">
+        <span class="size-label">Size Adjustment:</span>
         <button id="decreaseSize">➖</button> <!-- Minus button -->
         <button id="increaseSize">➕</button> <!-- Plus button -->
     </div>
