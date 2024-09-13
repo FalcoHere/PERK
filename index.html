@@ -45,8 +45,8 @@
 
     <div class="game-container">
         <div>
-            <h2>Snake Game</h2>
-            <canvas id="snakeCanvas" width="300" height="300"></canvas>
+            <h2>Tetris Game</h2>
+            <canvas id="tetrisCanvas" width="300" height="600"></canvas>
         </div>
 
         <div>
@@ -173,44 +173,130 @@
             window.location.href = 'https://t.me/pepepork_perk'; // Redirect to the specified link
         });
 
-        // Snake Game
-        const snakeCanvas = document.getElementById('snakeCanvas');
-        const snakeCtx = snakeCanvas.getContext('2d');
-        const snakeSize = 10;
-        let snake = [{ x: 150, y: 150 }];
-        let direction = { x: 0, y: 0 };
-        let food = { x: Math.floor(Math.random() * 30) * snakeSize, y: Math.floor(Math.random() * 30) * snakeSize };
+        // Tetris Game
+        const tetrisCanvas = document.getElementById('tetrisCanvas');
+        const tetrisCtx = tetrisCanvas.getContext('2d');
+        const tetrisSize = 30;
+        const tetrisRows = 20;
+        const tetrisCols = 10;
+        let tetrisBoard = [];
+        let tetrisPiece = null;
+        let tetrisPieceX = 0;
+        let tetrisPieceY = 0;
+        let tetrisInterval = null;
 
-        function drawSnake() {
-            snakeCtx.clearRect(0, 0, snakeCanvas.width, snakeCanvas.height);
-            snakeCtx.fillStyle = 'green';
-            snake.forEach(part => {
-                snakeCtx.fillRect(part.x, part.y, snakeSize, snakeSize);
-            });
-            snakeCtx.fillStyle = 'red';
-            snakeCtx.fillRect(food.x, food.y, snakeSize, snakeSize);
-        }
+        const tetrisPieces = [
+            [[1, 1, 1, 1]], // I
+            [[1, 1], [1, 1]], // O
+            [[1, 1, 1], [0, 1, 0]], // T
+            [[1, 1, 0], [0, 1, 1]], // S
+            [[0, 1, 1], [1, 1, 0]], // Z
+            [[1, 1, 1], [1, 0, 0]], // J
+            [[1, 1, 1], [0, 0, 1]] // L
+        ];
 
-        function updateSnake() {
-            const head = { x: snake[0].x + direction.x * snakeSize, y: snake[0].y + direction.y * snakeSize };
-            snake.unshift(head);
-            if (head.x === food.x && head.y === food.y) {
-                food = { x: Math.floor(Math.random() * 30) * snakeSize, y: Math.floor(Math.random() * 30) * snakeSize };
-            } else {
-                snake.pop();
+        function initTetris() {
+            for (let row = 0; row < tetrisRows; row++) {
+                tetrisBoard[row] = [];
+                for (let col = 0; col < tetrisCols; col++) {
+                    tetrisBoard[row][col] = 0;
+                }
             }
-            drawSnake();
+            tetrisPiece = getRandomPiece();
+            tetrisPieceX = Math.floor(tetrisCols / 2) - Math.floor(tetrisPiece[0].length / 2);
+            tetrisPieceY = 0;
+            drawTetris();
+            tetrisInterval = setInterval(moveTetrisPieceDown, 1000);
         }
 
-        snakeCanvas.addEventListener('mousemove', (event) => {
-            const rect = snakeCanvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;
-            const mouseY = event.clientY - rect.top;
-            direction.x = Math.sign(mouseX - snake[0].x);
-            direction.y = Math.sign(mouseY - snake[0].y);
-        });
+        function getRandomPiece() {
+            return tetrisPieces[Math.floor(Math.random() * tetrisPieces.length)];
+        }
 
-        setInterval(updateSnake, 100);
+        function drawTetris() {
+            tetrisCtx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
+            for (let row = 0; row < tetrisRows; row++) {
+                for (let col = 0; col < tetrisCols; col++) {
+                    if (tetrisBoard[row][col]) {
+                        tetrisCtx.fillStyle = 'cyan';
+                        tetrisCtx.fillRect(col * tetrisSize, row * tetrisSize, tetrisSize, tetrisSize);
+                    }
+                }
+            }
+            for (let row = 0; row < tetrisPiece.length; row++) {
+                for (let col = 0; col < tetrisPiece[row].length; col++) {
+                    if (tetrisPiece[row][col]) {
+                        tetrisCtx.fillStyle = 'yellow';
+                        tetrisCtx.fillRect((tetrisPieceX + col) * tetrisSize, (tetrisPieceY + row) * tetrisSize, tetrisSize, tetrisSize);
+                    }
+                }
+            }
+        }
+
+        function moveTetrisPieceDown() {
+            if (!collision(tetrisPiece, tetrisPieceX, tetrisPieceY + 1)) {
+                tetrisPieceY++;
+                drawTetris();
+            } else {
+                mergeTetrisPiece();
+                clearRows();
+                tetrisPiece = getRandomPiece();
+                tetrisPieceX = Math.floor(tetrisCols / 2) - Math.floor(tetrisPiece[0].length / 2);
+                tetrisPieceY = 0;
+                if (collision(tetrisPiece, tetrisPieceX, tetrisPieceY)) {
+                    gameOver();
+                }
+            }
+        }
+
+        function mergeTetrisPiece() {
+            for (let row = 0; row < tetrisPiece.length; row++) {
+                for (let col = 0; col < tetrisPiece[row].length; col++) {
+                    if (tetrisPiece[row][col]) {
+                        tetrisBoard[tetrisPieceY + row][tetrisPieceX + col] = 1;
+                    }
+                }
+            }
+        }
+
+        function clearRows() {
+            for (let row = tetrisRows - 1; row >= 0; row--) {
+                if (tetrisBoard[row].every(cell => cell === 1)) {
+                    for (let r = row; r > 0; r--) {
+                        for (let c = 0; c < tetrisCols; c++) {
+                            tetrisBoard[r][c] = tetrisBoard[r - 1][c];
+                        }
+                    }
+                    for (let c = 0; c < tetrisCols; c++) {
+                        tetrisBoard[0][c] = 0;
+                    }
+                    row++;
+                }
+            }
+        }
+
+        function collision(piece, x, y) {
+            for (let row = 0; row < piece.length; row++) {
+                for (let col = 0; col < piece[row].length; col++) {
+                    if (piece[row][col] && (
+                        y + row >= tetrisRows ||
+                        x + col < 0 ||
+                        x + col >= tetrisCols ||
+                        tetrisBoard[y + row][x + col]
+                    )) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function gameOver() {
+            clearInterval(tetrisInterval);
+            alert('Game Over');
+        }
+
+        initTetris();
 
         // Ping Pong Game
         const pingPongCanvas = document.getElementById('pingPongCanvas');
