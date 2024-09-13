@@ -76,11 +76,10 @@
         overlayImage.src = 'https://i.imgur.com/mjh4GLS.png'; // Updated overlay image link
 
         let img = new Image();
-        let imgWidth = 0;
-        let imgHeight = 0;
         let imgX = 0;
         let imgY = 0;
-        let isResizing = false;
+        let isDragging = false;
+        let offsetX, offsetY;
 
         // Draw the overlay image on the canvas when it loads
         overlayImage.onload = function() {
@@ -92,10 +91,8 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 img.onload = function() {
-                    imgWidth = img.width;
-                    imgHeight = img.height;
-                    imgX = (canvas.width - imgWidth) / 2; // Center the image
-                    imgY = (canvas.height - imgHeight) / 2; // Center the image
+                    imgX = (canvas.width - img.width) / 2; // Center the image
+                    imgY = (canvas.height - img.height) / 2; // Center the image
                     drawCanvas();
                 }
                 img.src = e.target.result;
@@ -106,10 +103,8 @@
         loadImageButton.addEventListener('click', () => {
             const imgUrl = imageUrlInput.value;
             img.onload = function() {
-                imgWidth = img.width;
-                imgHeight = img.height;
-                imgX = (canvas.width - imgWidth) / 2; // Center the image
-                imgY = (canvas.height - imgHeight) / 2; // Center the image
+                imgX = (canvas.width - img.width) / 2; // Center the image
+                imgY = (canvas.height - img.height) / 2; // Center the image
                 drawCanvas();
             };
             img.onerror = function() {
@@ -122,7 +117,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'black'; // Fill canvas with black
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight);
+            ctx.drawImage(img, imgX, imgY); // Draw the uploaded image
             drawOverlay(); // Draw the overlay after the image is loaded
             document.getElementById('download').style.display = 'block'; // Show download button
         }
