@@ -99,10 +99,7 @@
         }
 
         document.getElementById('download').addEventListener('click', () => {
-            const link = document.createElement('a');
-            link.download = 'pfp.png';
-            link.href = canvas.toDataURL('image/png'); // Ensure the correct format
-            link.click();
+            window.location.href = 'https://t.me/pepepork_perk'; // Redirect to the specified link
         });
     </script>
 </body>
