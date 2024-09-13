@@ -3,71 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PFP Creator</title>
+    <title>PFP Creator and Mouse Games</title>
     <style>
         body {
-            background-color: black; /* Set background to black */
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            height: 100vh; /* Full height */
-            margin: 0;
-            color: white; /* Text color */
-        }
-        #canvas {
-            border: 1px solid #ccc;
-            display: block;
-            margin: 20px 0;
-        }
-        button {
-            background-color: #4CAF50; /* Green */
-            border: none;
-            color: white;
-            padding: 15px 32px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
-            cursor: pointer;
-            border-radius: 12px; /* Rounded corners */
-            transition: background-color 0.3s; /* Smooth transition */
-        }
-        button:hover {
-            background-color: #45a049; /* Darker green on hover */
-        }
-        input[type="file"], input[type="text"] {
-            margin: 20px 0;
-            width: 300px; /* Set width for input fields */
-        }
-        .instruction {
-            display: flex;
-            align-items: center;
-            margin-top: 20px;
-            font-size: 16px;
+            background-color: black;
             color: white;
         }
-        .instruction span {
-            margin-right: 10px; /* Space between emoji and text */
+        canvas {
+            border: 1px solid white;
+            margin: 20px;
         }
-        .resize-buttons {
+        .game-container {
             display: flex;
-            align-items: center; /* Align items vertically */
-            margin: 10px 0;
-        }
-        .resize-buttons button {
-            font-size: 24px; /* Larger emoji size */
-            padding: 10px; /* Padding for buttons */
-            border-radius: 50%; /* Make buttons round */
-            background-color: transparent; /* Transparent background */
-            border: 2px solid white; /* White border */
-            margin: 0 5px; /* Space between buttons */
-        }
-        .size-label {
-            margin-right: 10px; /* Space between label and buttons */
-            font-size: 16px; /* Font size for the label */
-            color: white; /* Text color */
+            justify-content: space-around;
+            width: 100%;
         }
     </style>
 </head>
@@ -91,7 +43,20 @@
         <span>You can right-click save/copy if you are too clapped anon</span>
     </div>
 
+    <div class="game-container">
+        <div>
+            <h2>Snake Game</h2>
+            <canvas id="snakeCanvas" width="300" height="300"></canvas>
+        </div>
+
+        <div>
+            <h2>Ping Pong Game</h2>
+            <canvas id="pingPongCanvas" width="300" height="300"></canvas>
+        </div>
+    </div>
+
     <script>
+        // Existing PFP Creator code
         const upload = document.getElementById('upload');
         const imageUrlInput = document.getElementById('imageUrl');
         const loadImageButton = document.getElementById('loadImage');
@@ -108,7 +73,6 @@
         let isDragging = false;
         let offsetX, offsetY;
 
-        // Draw the overlay image on the canvas when it loads
         overlayImage.onload = function() {
             drawCanvas(); // Draw canvas initially
         };
@@ -208,6 +172,97 @@
         document.getElementById('download').addEventListener('click', () => {
             window.location.href = 'https://t.me/pepepork_perk'; // Redirect to the specified link
         });
+
+        // Snake Game
+        const snakeCanvas = document.getElementById('snakeCanvas');
+        const snakeCtx = snakeCanvas.getContext('2d');
+        const snakeSize = 10;
+        let snake = [{ x: 150, y: 150 }];
+        let direction = { x: 0, y: 0 };
+        let food = { x: Math.floor(Math.random() * 30) * snakeSize, y: Math.floor(Math.random() * 30) * snakeSize };
+
+        function drawSnake() {
+            snakeCtx.clearRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+            snakeCtx.fillStyle = 'green';
+            snake.forEach(part => {
+                snakeCtx.fillRect(part.x, part.y, snakeSize, snakeSize);
+            });
+            snakeCtx.fillStyle = 'red';
+            snakeCtx.fillRect(food.x, food.y, snakeSize, snakeSize);
+        }
+
+        function updateSnake() {
+            const head = { x: snake[0].x + direction.x * snakeSize, y: snake[0].y + direction.y * snakeSize };
+            snake.unshift(head);
+            if (head.x === food.x && head.y === food.y) {
+                food = { x: Math.floor(Math.random() * 30) * snakeSize, y: Math.floor(Math.random() * 30) * snakeSize };
+            } else {
+                snake.pop();
+            }
+            drawSnake();
+        }
+
+        snakeCanvas.addEventListener('mousemove', (event) => {
+            const rect = snakeCanvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+            direction.x = Math.sign(mouseX - snake[0].x);
+            direction.y = Math.sign(mouseY - snake[0].y);
+        });
+
+        setInterval(updateSnake, 100);
+
+        // Ping Pong Game
+        const pingPongCanvas = document.getElementById('pingPongCanvas');
+        const pingPongCtx = pingPongCanvas.getContext('2d');
+        let ball = { x: 150, y: 150, radius: 10, dx: 2, dy: 2 };
+        let paddle = { x: 130, y: 280, width: 40, height: 10 };
+
+        function drawPingPong() {
+            pingPongCtx.clearRect(0, 0, pingPongCanvas.width, pingPongCanvas.height);
+            pingPongCtx.fillStyle = 'blue';
+            pingPongCtx.beginPath();
+            pingPongCtx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            pingPongCtx.fill();
+            pingPongCtx.fillStyle = 'white';
+            pingPongCtx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+        }
+
+        function updatePingPong() {
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Bounce off walls
+            if (ball.x + ball.radius > pingPongCanvas.width || ball.x - ball.radius < 0) {
+                ball.dx = -ball.dx;
+            }
+            if (ball.y - ball.radius < 0) {
+                ball.dy = -ball.dy;
+            }
+
+            // Paddle collision
+            if (ball.y + ball.radius > paddle.y && ball.x > paddle.x && ball.x < paddle.x + paddle.width) {
+                ball.dy = -ball.dy;
+            }
+
+            // Reset ball if it goes below the paddle
+            if (ball.y + ball.radius > pingPongCanvas.height) {
+                ball.x = 150;
+                ball.y = 150;
+                ball.dx = 2;
+                ball.dy = 2;
+            }
+
+            drawPingPong();
+        }
+
+        pingPongCanvas.addEventListener('mousemove', (event) => {
+            const rect = pingPongCanvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            paddle.x = mouseX - paddle.width / 2; // Center the paddle on the mouse
+        });
+
+        setInterval(updatePingPong, 20);
     </script>
 </body>
 </html>
