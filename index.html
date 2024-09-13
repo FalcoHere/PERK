@@ -51,6 +51,19 @@
         .instruction span {
             margin-right: 10px; /* Space between emoji and text */
         }
+        .resize-buttons {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        .resize-buttons button {
+            font-size: 24px; /* Larger emoji size */
+            padding: 10px; /* Padding for buttons */
+            border-radius: 50%; /* Make buttons round */
+            background-color: transparent; /* Transparent background */
+            border: 2px solid white; /* White border */
+            margin: 0 5px; /* Space between buttons */
+        }
     </style>
 </head>
 <body>
@@ -58,6 +71,12 @@
     <input type="file" id="upload" accept="image/*">
     <input type="text" id="imageUrl" placeholder="Enter image URL here">
     <button id="loadImage">Load Image from URL</button>
+    
+    <div class="resize-buttons">
+        <button id="decreaseSize">➖</button> <!-- Minus button -->
+        <button id="increaseSize">➕</button> <!-- Plus button -->
+    </div>
+
     <canvas id="canvas" width="300" height="300"></canvas>
     <button id="download" style="display: none;">Go to Link</button> <!-- Updated button text -->
     
@@ -81,12 +100,11 @@
         let imgWidth = 0;
         let imgHeight = 0;
         let isDragging = false;
-        let isResizing = false;
         let offsetX, offsetY;
 
         // Draw the overlay image on the canvas when it loads
         overlayImage.onload = function() {
-            drawOverlay(); // Draw overlay initially
+            drawCanvas(); // Draw canvas initially
         };
 
         upload.addEventListener('change', (event) => {
@@ -126,21 +144,27 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight); // Draw the uploaded image
             drawOverlay(); // Draw the overlay after the image is loaded
-            drawResizeHandle(); // Draw the resize handle
             document.getElementById('download').style.display = 'block'; // Show download button
         }
 
         function drawOverlay() {
             const overlaySize = canvas.width * 0.5; // 50% size of the box
-            const overlayY = canvas.height * 0.9; // Position the overlay very close to the bottom
+            const overlayY = canvas.height * 0.85; // Position the overlay close to the bottom
             ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, overlayY - overlaySize / 2, overlaySize, overlaySize); // Center the overlay horizontally
         }
 
-        function drawResizeHandle() {
-            const handleSize = 10; // Size of the resize handle
-            ctx.fillStyle = 'white'; // Color of the handle
-            ctx.fillRect(imgX + imgWidth - handleSize, imgY + imgHeight - handleSize, handleSize, handleSize); // Draw the resize handle
-        }
+        // Resize buttons functionality
+        document.getElementById('increaseSize').addEventListener('click', () => {
+            imgWidth *= 1.1; // Increase width by 10%
+            imgHeight *= 1.1; // Increase height by 10%
+            drawCanvas(); // Redraw the canvas
+        });
+
+        document.getElementById('decreaseSize').addEventListener('click', () => {
+            imgWidth *= 0.9; // Decrease width by 10%
+            imgHeight *= 0.9; // Decrease height by 10%
+            drawCanvas(); // Redraw the canvas
+        });
 
         // Mouse events for dragging the image
         canvas.addEventListener('mousedown', (e) => {
@@ -154,12 +178,6 @@
                 isDragging = true;
                 offsetX = mouseX - imgX; // Calculate offset
                 offsetY = mouseY - imgY; // Calculate offset
-            }
-
-            // Check if the mouse is near the bottom-right corner of the image
-            if (mouseX >= imgX + imgWidth - 10 && mouseX <= imgX + imgWidth + 10 &&
-                mouseY >= imgY + imgHeight - 10 && mouseY <= imgY + imgHeight + 10) {
-                isResizing = true;
             }
         });
 
@@ -175,23 +193,10 @@
 
                 drawCanvas(); // Redraw the canvas with the new image position
             }
-
-            if (isResizing) {
-                const rect = canvas.getBoundingClientRect();
-                const mouseX = e.clientX - rect.left;
-                const mouseY = e.clientY - rect.top;
-
-                // Update the width and height of the image based on mouse position
-                imgWidth = mouseX - imgX;
-                imgHeight = mouseY - imgY;
-
-                drawCanvas(); // Redraw the canvas with the new image size
-            }
         });
 
         canvas.addEventListener('mouseup', () => {
             isDragging = false; // Stop dragging
-            isResizing = false; // Stop resizing
         });
 
         document.getElementById('download').addEventListener('click', () => {
