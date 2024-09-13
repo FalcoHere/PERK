@@ -62,19 +62,8 @@
 
     <div class="game-container">
         <div>
-            <h2>Tetris Game</h2>
-            <canvas id="tetrisCanvas" width="300" height="600"></canvas>
-            <div class="controls">
-                <button id="startTetris">Start Game</button>
-                <button id="moveLeft">⬅️</button>
-                <button id="moveRight">➡️</button>
-                <button id="rotate">↻</button>
-            </div>
-        </div>
-
-        <div>
-            <h2>Ping Pong Game</h2>
-            <canvas id="pingPongCanvas" width="300" height="300"></canvas>
+            <h2>Sideways Ping Pong Game</h2>
+            <canvas id="pingPongCanvas" width="600" height="300"></canvas>
         </div>
     </div>
 
@@ -196,165 +185,12 @@
             window.location.href = 'https://t.me/pepepork_perk'; // Redirect to the specified link
         });
 
-        // Tetris Game
-        const tetrisCanvas = document.getElementById('tetrisCanvas');
-        const tetrisCtx = tetrisCanvas.getContext('2d');
-        const ROWS = 20;
-        const COLS = 10;
-        const BLOCK_SIZE = 30;
-        const colors = [
-            null,
-            'cyan', // I
-            'blue', // J
-            'orange', // L
-            'yellow', // O
-            'green', // S
-            'purple', // T
-            'red' // Z
-        ];
-
-        let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
-        let currentPiece;
-        let currentPosition;
-        let gameInterval;
-        let isGameStarted = false;
-
-        function drawBoard() {
-            tetrisCtx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    if (board[r][c]) {
-                        tetrisCtx.fillStyle = colors[board[r][c]];
-                        tetrisCtx.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                    }
-                }
-            }
-            drawCurrentPiece();
-        }
-
-        function drawCurrentPiece() {
-            tetrisCtx.fillStyle = colors[currentPiece.type];
-            currentPiece.shape.forEach((row, r) => {
-                row.forEach((value, c) => {
-                    if (value) {
-                        tetrisCtx.fillRect((currentPosition.x + c) * BLOCK_SIZE, (currentPosition.y + r) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                    }
-                });
-            });
-        }
-
-        function createPiece() {
-            const pieces = [
-                { type: 1, shape: [[1, 1, 1, 1]] }, // I
-                { type: 2, shape: [[0, 0, 1], [1, 1, 1]] }, // J
-                { type: 3, shape: [[1, 1, 1], [0, 0, 1]] }, // L
-                { type: 4, shape: [[1, 1], [1, 1]] }, // O
-                { type: 5, shape: [[0, 1, 1], [1, 1, 0]] }, // S
-                { type: 6, shape: [[0, 1, 0], [1, 1, 1]] }, // T
-                { type: 7, shape: [[1, 1, 0], [0, 1, 1]] } // Z
-            ];
-            return pieces[Math.floor(Math.random() * pieces.length)];
-        }
-
-        function resetGame() {
-            board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
-            currentPiece = createPiece();
-            currentPosition = { x: 3, y: 0 };
-            drawBoard();
-        }
-
-        function dropPiece() {
-            currentPosition.y++;
-            if (collision()) {
-                currentPosition.y--;
-                merge();
-                clearLines();
-                currentPiece = createPiece();
-                currentPosition = { x: 3, y: 0 };
-                if (collision()) {
-                    alert("Game Over!");
-                    resetGame();
-                    stopGame();
-                }
-            }
-            drawBoard();
-        }
-
-        function collision() {
-            return currentPiece.shape.some((row, r) => {
-                return row.some((value, c) => {
-                    if (value) {
-                        const newX = currentPosition.x + c;
-                        const newY = currentPosition.y + r;
-                        return newX < 0 || newX >= COLS || newY >= ROWS || (newY >= 0 && board[newY][newX]);
-                    }
-                    return false;
-                });
-            });
-        }
-
-        function merge() {
-            currentPiece.shape.forEach((row, r) => {
-                row.forEach((value, c) => {
-                    if (value) {
-                        board[currentPosition.y + r][currentPosition.x + c] = currentPiece.type;
-                    }
-                });
-            });
-        }
-
-        function clearLines() {
-            for (let r = ROWS - 1; r >= 0; r--) {
-                if (board[r].every(value => value !== 0)) {
-                    board.splice(r, 1);
-                    board.unshift(Array(COLS).fill(0));
-                }
-            }
-        }
-
-        function startGame() {
-            if (!isGameStarted) {
-                isGameStarted = true;
-                resetGame();
-                gameInterval = setInterval(dropPiece, 1000);
-            }
-        }
-
-        function stopGame() {
-            clearInterval(gameInterval);
-            isGameStarted = false;
-        }
-
-        document.getElementById('startTetris').addEventListener('click', startGame);
-        document.getElementById('moveLeft').addEventListener('click', () => movePiece(-1));
-        document.getElementById('moveRight').addEventListener('click', () => movePiece(1));
-        document.getElementById('rotate').addEventListener('click', rotatePiece);
-
-        function movePiece(direction) {
-            if (isGameStarted) {
-                const newX = currentPosition.x + direction;
-                if (newX >= 0 && newX < COLS) {
-                    currentPosition.x = newX;
-                    drawBoard();
-                }
-            }
-        }
-
-        function rotatePiece() {
-            if (isGameStarted) {
-                const newShape = currentPiece.shape[0].map((val, index) => currentPiece.shape.map(row => row[index]).reverse());
-                if (!collision(newShape)) {
-                    currentPiece.shape = newShape;
-                    drawBoard();
-                }
-            }
-        }
-
-        // Ping Pong Game
+        // Sideways Ping Pong Game
         const pingPongCanvas = document.getElementById('pingPongCanvas');
         const pingPongCtx = pingPongCanvas.getContext('2d');
-        let ball = { x: 150, y: 150, radius: 10, dx: 2, dy: 2 };
-        let paddle = { x: 130, y: 280, width: 40, height: 10 };
+        let ball = { x: 300, y: 150, radius: 10, dx: 2, dy: 2 };
+        let leftPaddle = { x: 10, y: 130, width: 10, height: 40 };
+        let rightPaddle = { x: 580, y: 130, width: 10, height: 40 };
 
         function drawPingPong() {
             pingPongCtx.clearRect(0, 0, pingPongCanvas.width, pingPongCanvas.height);
@@ -363,7 +199,8 @@
             pingPongCtx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
             pingPongCtx.fill();
             pingPongCtx.fillStyle = 'white';
-            pingPongCtx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+            pingPongCtx.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height);
+            pingPongCtx.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height);
         }
 
         function updatePingPong() {
@@ -371,21 +208,21 @@
             ball.y += ball.dy;
 
             // Bounce off walls
-            if (ball.x + ball.radius > pingPongCanvas.width || ball.x - ball.radius < 0) {
-                ball.dx = -ball.dx;
-            }
-            if (ball.y - ball.radius < 0) {
+            if (ball.y + ball.radius > pingPongCanvas.height || ball.y - ball.radius < 0) {
                 ball.dy = -ball.dy;
             }
 
             // Paddle collision
-            if (ball.y + ball.radius > paddle.y && ball.x > paddle.x && ball.x < paddle.x + paddle.width) {
-                ball.dy = -ball.dy;
+            if (ball.x + ball.radius > leftPaddle.x && ball.y > leftPaddle.y && ball.y < leftPaddle.y + leftPaddle.height) {
+                ball.dx = -ball.dx;
+            }
+            if (ball.x - ball.radius < rightPaddle.x + rightPaddle.width && ball.y > rightPaddle.y && ball.y < rightPaddle.y + rightPaddle.height) {
+                ball.dx = -ball.dx;
             }
 
-            // Reset ball if it goes below the paddle
-            if (ball.y + ball.radius > pingPongCanvas.height) {
-                ball.x = 150;
+            // Reset ball if it goes beyond the paddles
+            if (ball.x + ball.radius > pingPongCanvas.width || ball.x - ball.radius < 0) {
+                ball.x = 300;
                 ball.y = 150;
                 ball.dx = 2;
                 ball.dy = 2;
@@ -396,8 +233,9 @@
 
         pingPongCanvas.addEventListener('mousemove', (event) => {
             const rect = pingPongCanvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;
-            paddle.x = mouseX - paddle.width / 2; // Center the paddle on the mouse
+            const mouseY = event.clientY - rect.top;
+            leftPaddle.y = mouseY - leftPaddle.height / 2; // Center the left paddle on the mouse
+            rightPaddle.y = mouseY - rightPaddle.height / 2; // Center the right paddle on the mouse
         });
 
         setInterval(updatePingPong, 20);
