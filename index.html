@@ -53,12 +53,7 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const overlayImage = new Image();
-        overlayImage.src = 'https://i.imgur.com/your_image.png'; // Replace with your direct overlay PNG link
-
-        // Ensure the overlay image is loaded before using it
-        overlayImage.onload = function() {
-            // Overlay image is ready to be drawn
-        };
+        overlayImage.src = "https://i.imgur.com/mjh4GLS.png"; // Updated overlay image link
 
         upload.addEventListener('change', (event) => {
             const file = event.target.files[0];
@@ -70,14 +65,18 @@
                     ctx.fillStyle = 'black'; // Fill canvas with black
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const overlaySize = canvas.width * 0.5; // 50% size of the box
-                    ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, (canvas.height - overlaySize) / 2, overlaySize, overlaySize);
+                    drawOverlay(); // Draw the overlay after the image is loaded
                     document.getElementById('download').style.display = 'block'; // Show download button
                 }
                 img.src = e.target.result;
             }
             reader.readAsDataURL(file);
         });
+
+        function drawOverlay() {
+            const overlaySize = canvas.width * 0.5; // 50% size of the box
+            ctx.drawImage(overlayImage, (canvas.width - overlaySize) / 2, (canvas.height - overlaySize) / 2, overlaySize, overlaySize);
+        }
 
         document.getElementById('download').addEventListener('click', () => {
             const link = document.createElement('a');
